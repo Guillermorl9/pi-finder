@@ -21,6 +21,8 @@ export default function PrimeFactorizer() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [showTip, setShowTip] = useState<boolean>(false);
+  const [tipMessage, setTipMessage] = useState<string>('');
 
   const isPrime = (num: number): boolean => {
     if (num <= 1) return false;
@@ -36,14 +38,13 @@ export default function PrimeFactorizer() {
     let p1: number, p2: number;
     let numberToFactorize: number;
 
-    // Ensure two distinct primes are chosen and their product is within a reasonable range
     do {
-      const p1Index = Math.floor(Math.random() * (SMALL_PRIMES.length / 2)); // Bias towards smaller primes for p1
+      const p1Index = Math.floor(Math.random() * (SMALL_PRIMES.length / 2)); 
       const p2Index = Math.floor(Math.random() * SMALL_PRIMES.length);
       p1 = SMALL_PRIMES[p1Index];
       p2 = SMALL_PRIMES[p2Index];
       numberToFactorize = p1 * p2;
-    } while (p1 === p2 || numberToFactorize < 100 || numberToFactorize > 1000); // Avoid trivial or overly large numbers
+    } while (p1 === p2 || numberToFactorize < 100 || numberToFactorize > 1000); 
 
     const solutionFactors = [p1, p2].sort((a, b) => a - b);
     return { numberToFactorize, solutionFactors };
@@ -55,7 +56,7 @@ export default function PrimeFactorizer() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUserInput(e.target.value);
-    if (feedback && !isGameOver) setFeedback(null); // Clear feedback on new input, unless game over for solution reveal
+    if (feedback && !isGameOver) setFeedback(null); 
   };
 
   const startNewChallenge = () => {
@@ -64,6 +65,8 @@ export default function PrimeFactorizer() {
     setFeedback(null);
     setIsGameOver(false);
     setIsChecking(false);
+    setShowTip(false);
+    setTipMessage('');
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -111,7 +114,6 @@ export default function PrimeFactorizer() {
       setFeedback({ type: 'success', message: `Correct! The prime factors of ${challenge.numberToFactorize} are ${challenge.solutionFactors.join(' and ')}.` });
       setIsGameOver(true);
     } else {
-      // This case should be rare if product matches and all are prime, but covers other discrepancies
       setFeedback({ type: 'error', message: "Those are prime factors and their product is correct, but not the unique set we were looking for. Try again or check your factors." });
     }
 
@@ -125,7 +127,13 @@ export default function PrimeFactorizer() {
       message: `The prime factors of ${challenge.numberToFactorize} are ${challenge.solutionFactors.join(' and ')}.` 
     });
     setIsGameOver(true);
-    setUserInput(''); // Clear input field
+    setUserInput(''); 
+    setShowTip(false); // Hide tip if it was shown
+  };
+
+  const handleShowTip = () => {
+    setTipMessage("Hint: Try dividing by small prime numbers (e.g., 2, 3, 5, 7). If the number is even, 2 is a factor. If the sum of its digits is divisible by 3, then 3 is a factor. If it ends in 0 or 5, then 5 is a factor. One of the prime factors will generally be less than or equal to the square root of the number.");
+    setShowTip(true);
   };
 
   if (!challenge) {
@@ -183,20 +191,41 @@ export default function PrimeFactorizer() {
               {isChecking ? 'Checking...' : 'Check Factors'}
             </Button>
             {!isGameOver && (
-              <Button
-                type="button"
-                variant="outline"
-                className="text-sm h-12"
-                onClick={handleRevealSolution}
-                disabled={isChecking}
-              >
-                Reveal Solution
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-sm h-12 px-3"
+                  onClick={handleRevealSolution}
+                  disabled={isChecking}
+                >
+                  Reveal Solution
+                </Button>
+                 {!showTip && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-sm h-12 px-3"
+                    onClick={handleShowTip}
+                    disabled={isChecking}
+                  >
+                    Show Tip
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center pt-4 space-y-3">
+        {showTip && !isGameOver && (
+          <Alert variant="default" className="w-full text-left border-accent/30">
+            <AlertTitle className="text-accent">Strategy Tip</AlertTitle>
+            <AlertDescription className="font-mono text-sm">
+              {tipMessage}
+            </AlertDescription>
+          </Alert>
+        )}
         {feedback && (
           <Alert variant={feedback.type === 'destructive' ? 'destructive' : 'default'} className="w-full text-center">
              {feedback.type === 'success' && <AlertTitle>Congratulations!</AlertTitle>}
@@ -216,3 +245,4 @@ export default function PrimeFactorizer() {
     </Card>
   );
 }
+
