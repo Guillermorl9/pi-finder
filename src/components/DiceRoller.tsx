@@ -14,15 +14,26 @@ interface RollResult {
   count: number;
 }
 
+interface SimulationParams {
+  numRolls: string;
+  boostInfo: {
+    number: number;
+    probability: number; // Stored as percentage, e.g., 25 for 25%
+  } | null;
+}
+
 export default function DiceRoller() {
   const [numRollsInput, setNumRollsInput] = useState<string>('100');
   const [boostedNumber, setBoostedNumber] = useState<number | null>(null);
+  const [targetProbabilityPercentInput, setTargetProbabilityPercentInput] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [probabilityError, setProbabilityError] = useState<string | null>(null);
   const [results, setResults] = useState<RollResult[] | null>(null);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [simulationKey, setSimulationKey] = useState<number>(0); // Used to force re-render chart
+  const [simulationKey, setSimulationKey] = useState<number>(0);
+  const [lastSimulationParams, setLastSimulationParams] = useState<SimulationParams | null>(null);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleNumRollsInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNumRollsInput(value);
 
@@ -36,7 +47,30 @@ export default function DiceRoller() {
         setError(null);
       }
     } else {
-      setError(null); 
+      setError(null);
+    }
+  };
+
+  const handleProbabilityInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTargetProbabilityPercentInput(value);
+
+    if (!value && boostedNumber !== null) { // Error if boosted but input is cleared
+      setProbabilityError('Probability is required if a number is selected for boost.');
+      return;
+    }
+    if (!value) { // Allow empty input if no boost selected or initial state
+        setProbabilityError(null);
+        return;
+    }
+
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+      setProbabilityError('Please enter a valid number.');
+    } else if (num < 0 || num > 100) {
+      setProbabilityError('Probability must be between 0 and 100.');
+    } else {
+      setProbabilityError(null);
     }
   };
 
@@ -46,32 +80,55 @@ export default function DiceRoller() {
         setError("Please enter the number of rolls.");
         return;
     }
-    const num = parseInt(numRollsInput, 10);
-    if (isNaN(num) || num < 1 || num > 1000) {
+    const numRolls = parseInt(numRollsInput, 10);
+    if (isNaN(numRolls) || numRolls < 1 || numRolls > 1000) {
       setError('Number of rolls must be between 1 and 1000.');
       return;
     }
     setError(null);
-    setIsSimulating(true);
-    setResults(null); 
 
+    let currentBoostInfo: SimulationParams['boostInfo'] = null;
+    let targetProbValue: number | null = null;
+
+    if (boostedNumber !== null) {
+      if (!targetProbabilityPercentInput) {
+        setProbabilityError('Probability is required if a number is selected for boost.');
+        return;
+      }
+      targetProbValue = parseFloat(targetProbabilityPercentInput);
+      if (isNaN(targetProbValue) || targetProbValue < 0 || targetProbValue > 100) {
+        setProbabilityError('Probability must be between 0 and 100.');
+        return;
+      }
+      setProbabilityError(null);
+      currentBoostInfo = { number: boostedNumber, probability: targetProbValue };
+    }
+
+
+    setIsSimulating(true);
+    setResults(null);
+
+    // Simulate dice rolls
     setTimeout(() => {
       const counts: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-      
-      let probabilities: number[];
-      if (boostedNumber !== null) {
-        probabilities = Array(6).fill(0).map((_, index) => {
-          const currentDieFace = index + 1;
-          if (currentDieFace === boostedNumber) {
-            return (1/6) + 0.02; // Boosted probability
-          } else {
-            return (1/6) - (0.02 / 5); // Reduced probability for others
-          }
-        });
-      } else {
-        probabilities = Array(6).fill(1/6); // Equal probability
-      }
+      let probabilities: number[] = Array(6).fill(1/6); // Default equal probability
 
+      if (boostedNumber !== null && targetProbValue !== null) {
+        const pTarget = targetProbValue / 100;
+        if (pTarget >= 0 && pTarget <= 1) {
+          const remainingProb = 1 - pTarget;
+          const probPerOther = remainingProb / 5;
+          probabilities = probabilities.map((_, index) => {
+            const currentDieFace = index + 1;
+            if (currentDieFace === boostedNumber) {
+              return pTarget;
+            } else {
+              return probPerOther;
+            }
+          });
+        }
+      }
+      
       const rollDie = () => {
         const rand = Math.random();
         let cumulativeProbability = 0;
@@ -81,10 +138,10 @@ export default function DiceRoller() {
             return i + 1; // Die face (1-6)
           }
         }
-        return 6; // Fallback for the very unlikely event Math.random() is 1 or due to floating point issues
+        return 6; // Fallback
       };
 
-      for (let i = 0; i < num; i++) {
+      for (let i = 0; i < numRolls; i++) {
         const roll = rollDie();
         counts[roll]++;
       }
@@ -93,11 +150,17 @@ export default function DiceRoller() {
         count: value,
       }));
       setResults(formattedResults);
+      setLastSimulationParams({ numRolls: numRollsInput, boostInfo: currentBoostInfo });
       setIsSimulating(false);
-      setSimulationKey(prevKey => prevKey + 1); 
-    }, 50); 
+      setSimulationKey(prevKey => prevKey + 1);
+    }, 50);
   };
   
+  const isSubmitDisabled = !!error || 
+                           numRollsInput.length === 0 || 
+                           isSimulating || 
+                           (boostedNumber !== null && (!!probabilityError || targetProbabilityPercentInput.length === 0));
+
   return (
     <Card className="w-full max-w-md shadow-xl">
       <CardHeader>
@@ -114,7 +177,7 @@ export default function DiceRoller() {
               id="numRollsInput"
               type="number"
               value={numRollsInput}
-              onChange={handleInputChange}
+              onChange={handleNumRollsInputChange}
               placeholder="e.g., 100"
               className="text-center text-lg font-mono h-12"
               min="1"
@@ -126,15 +189,16 @@ export default function DiceRoller() {
             <p id="rolls-info" className="text-xs text-muted-foreground text-center font-mono">
               Enter how many times you want to roll the dice.
             </p>
-            {error && !numRollsInput && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
-            {error && numRollsInput && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
+            {error && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
           </div>
 
           <div className="space-y-3">
-            <Label className="text-base">Boost a Number (Extra 2% Chance)</Label>
+            <Label className="text-base">Customize Chance for a Number</Label>
             <RadioGroup
               value={boostedNumber ? boostedNumber.toString() : "none"}
               onValueChange={(value) => {
+                setTargetProbabilityPercentInput(""); // Reset probability input
+                setProbabilityError(null);          // Clear probability error
                 if (value === "none") {
                   setBoostedNumber(null);
                 } else {
@@ -154,15 +218,38 @@ export default function DiceRoller() {
                 </div>
               ))}
             </RadioGroup>
-             <p className="text-xs text-muted-foreground text-center font-mono">
-              Select a number to give it a slight advantage.
+             <p className="text-xs text-muted-foreground text-center font-mono pb-2">
+              Select a number to customize its probability of appearing.
             </p>
+            {boostedNumber !== null && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="targetProbabilityInput">Target Probability for {boostedNumber} (%)</Label>
+                <Input
+                  id="targetProbabilityInput"
+                  type="number" // Using number type for better mobile UX and native validation hints
+                  value={targetProbabilityPercentInput}
+                  onChange={handleProbabilityInputChange}
+                  placeholder="0-100"
+                  className="text-center text-lg font-mono h-12"
+                  min="0"
+                  max="100"
+                  step="0.1" // Allow decimals if desired, though parseFloat handles it
+                  aria-label={`Target probability for number ${boostedNumber}`}
+                  aria-invalid={!!probabilityError}
+                  aria-describedby="probability-error-message probability-info-custom"
+                />
+                <p id="probability-info-custom" className="text-xs text-muted-foreground text-center font-mono">
+                  Enter desired chance (0-100) for selected number.
+                </p>
+                {probabilityError && <p id="probability-error-message" className="text-sm text-destructive text-center font-mono pt-1">{probabilityError}</p>}
+              </div>
+            )}
           </div>
 
           <Button 
             type="submit" 
             className="w-full text-lg h-12"
-            disabled={!!error || numRollsInput.length === 0 || isSimulating}
+            disabled={isSubmitDisabled}
           >
             {isSimulating ? 'Simulating...' : 'Roll Dice'}
           </Button>
@@ -173,14 +260,14 @@ export default function DiceRoller() {
             <p className="text-lg font-mono">Simulating rolls...</p>
          </CardFooter>
       )}
-      {results && !isSimulating && (
+      {results && !isSimulating && lastSimulationParams && (
         <CardFooter className="flex flex-col items-center justify-center pt-6 w-full">
           <p className="text-lg font-mono text-center mb-4">
-            Results for <span className="font-bold text-primary">{numRollsInput}</span> rolls:
-            {boostedNumber && (
+            Results for <span className="font-bold text-primary">{lastSimulationParams.numRolls}</span> rolls:
+            {lastSimulationParams.boostInfo && (
                 <>
                 <br />
-                (Number <span className="font-bold text-accent">{boostedNumber}</span> was boosted)
+                (Number <span className="font-bold text-accent">{lastSimulationParams.boostInfo.number}</span> targeted to <span className="font-bold text-accent">{lastSimulationParams.boostInfo.probability.toFixed(targetProbabilityPercentInput.includes('.') ? 2 : 0)}%</span> chance)
                 </>
             )}
           </p>
@@ -195,7 +282,6 @@ export default function DiceRoller() {
                     backgroundColor: 'hsl(var(--card))', 
                     borderColor: 'hsl(var(--border))',
                     borderRadius: 'var(--radius)',
-                    boxShadow: 'var(--shadow-lg)' 
                   }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
                   itemStyle={{ color: 'hsl(var(--primary))' }}
@@ -211,4 +297,3 @@ export default function DiceRoller() {
     </Card>
   );
 }
-
