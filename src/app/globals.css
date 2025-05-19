@@ -1,36 +1,37 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 94.1%; /* #F0F0F0 Light Gray */
-    --foreground: 0 0% 3.9%; /* Default dark text */
+    --background: 220 20% 96%; /* Very light, cool gray */
+    --foreground: 220 10% 15%; /* Dark, cool gray for text */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 3.9%;
+    --card: 0 0% 100%; /* White, clean */
+    --card-foreground: 220 10% 15%; /* Same as main foreground */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 220 10% 15%;
 
-    --primary: 210 100% 70%; /* #66B2FF Sky Blue */
-    --primary-foreground: 0 0% 10%; /* Dark text for contrast on Sky Blue */
+    --primary: 210 80% 55%; /* A strong, but not overly bright blue */
+    --primary-foreground: 0 0% 100%; /* White for good contrast */
 
-    --secondary: 0 0% 96.1%; /* Default light gray */
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 220 15% 90%; /* Lighter cool gray for secondary elements */
+    --secondary-foreground: 220 10% 25%; /* Slightly lighter dark gray */
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 220 15% 92%; /* Very light gray for muted text/elements */
+    --muted-foreground: 220 10% 45%; /* Medium gray for muted text */
 
-    --accent: 181 100% 74.5%; /* #7DF9FF Electric Blue */
-    --accent-foreground: 0 0% 9%; /* Dark text for contrast on Electric Blue */
+    --accent: 260 70% 60%; /* A modern purple/violet as accent */
+    --accent-foreground: 0 0% 100%; /* White for good contrast on accent */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 75% 55%; /* A clear red for destructive actions */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 210 100% 70%; /* Primary color for ring */
+    --border: 220 15% 88%; /* Light cool gray border */
+    --input: 220 15% 88%; /* Same as border for input fields */
+    --ring: 210 80% 60%; /* Slightly lighter primary for focus rings */
 
     --radius: 0.5rem;
 
@@ -53,34 +54,33 @@
   }
 
   .dark {
-    /* Dark theme uses similar logic, adjust if specific dark mode colors are needed */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 220 15% 10%; /* Dark, cool slate gray */
+    --foreground: 220 10% 90%; /* Light cool gray for text */
 
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 15% 12%; /* Slightly lighter slate for cards */
+    --card-foreground: 220 10% 90%;
 
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 15% 10%;
+    --popover-foreground: 220 10% 90%;
 
-    --primary: 210 100% 65%; /* Adjusted Sky Blue for dark mode */
-    --primary-foreground: 0 0% 10%;
+    --primary: 210 90% 65%; /* Brighter blue for dark mode */
+    --primary-foreground: 210 20% 10%; /* Very dark blue/black for contrast */
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 10% 20%; /* Darker cool gray for secondary elements */
+    --secondary-foreground: 220 10% 80%; /* Lighter gray text */
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 220 10% 25%; /* Slightly lighter dark gray */
+    --muted-foreground: 220 10% 55%; /* Medium-light gray for muted text */
 
-    --accent: 181 100% 70%; /* Adjusted Electric Blue for dark mode */
-    --accent-foreground: 0 0% 9%;
+    --accent: 260 80% 70%; /* Brighter purple/violet for dark mode */
+    --accent-foreground: 260 20% 10%; /* Very dark purple/black for contrast */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 60%; /* Slightly brighter red for dark mode */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 210 100% 65%; /* Primary color for ring in dark mode */
+    --border: 220 10% 25%; /* Dark gray border */
+    --input: 220 10% 25%;
+    --ring: 210 90% 70%; /* Brighter primary for focus rings */
     
     /* Chart colors - kept from template */
     --chart-1: 220 70% 50%;
