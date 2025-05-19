@@ -14,8 +14,8 @@ export default function GamesLayout({
 
   return (
     <div className="flex min-h-screen flex-col items-center p-4 sm:p-6 md:p-8 bg-background">
-      <Tabs value={pathname} className="w-full max-w-lg mb-6 sm:mb-8">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={pathname} className="w-full max-w-xl mb-6 sm:mb-8">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="/pi-finder" asChild>
             <Link href="/pi-finder">Pi Finder</Link>
           </TabsTrigger>
@@ -24,6 +24,9 @@ export default function GamesLayout({
           </TabsTrigger>
           <TabsTrigger value="/number-guesser" asChild>
             <Link href="/number-guesser">Number Guesser</Link>
+          </TabsTrigger>
+          <TabsTrigger value="/prime-factorizer" asChild>
+            <Link href="/prime-factorizer">Prime Factorizer</Link>
           </TabsTrigger>
         </TabsList>
       </Tabs>
