@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent, useEffect } from 'react';
@@ -5,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface RollResult {
@@ -14,6 +16,7 @@ interface RollResult {
 
 export default function DiceRoller() {
   const [numRollsInput, setNumRollsInput] = useState<string>('100');
+  const [boostedNumber, setBoostedNumber] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<RollResult[] | null>(null);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
@@ -22,8 +25,6 @@ export default function DiceRoller() {
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNumRollsInput(value);
-    // Don't clear results immediately, allow user to see old results while typing
-    // setResults(null); 
 
     if (!/^\d*$/.test(value)) {
       setError('Please enter only digits.');
@@ -35,7 +36,6 @@ export default function DiceRoller() {
         setError(null);
       }
     } else {
-      // Allow empty input, but error on submit if still empty
       setError(null); 
     }
   };
@@ -53,15 +53,39 @@ export default function DiceRoller() {
     }
     setError(null);
     setIsSimulating(true);
-    setResults(null); // Clear results before new simulation
+    setResults(null); 
 
-    // Simulate dice rolls
-    // setTimeout is used here to ensure the UI updates to show "Simulating..."
-    // before the potentially blocking loop starts.
     setTimeout(() => {
       const counts: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      
+      let probabilities: number[];
+      if (boostedNumber !== null) {
+        probabilities = Array(6).fill(0).map((_, index) => {
+          const currentDieFace = index + 1;
+          if (currentDieFace === boostedNumber) {
+            return (1/6) + 0.02; // Boosted probability
+          } else {
+            return (1/6) - (0.02 / 5); // Reduced probability for others
+          }
+        });
+      } else {
+        probabilities = Array(6).fill(1/6); // Equal probability
+      }
+
+      const rollDie = () => {
+        const rand = Math.random();
+        let cumulativeProbability = 0;
+        for (let i = 0; i < 6; i++) {
+          cumulativeProbability += probabilities[i];
+          if (rand < cumulativeProbability) {
+            return i + 1; // Die face (1-6)
+          }
+        }
+        return 6; // Fallback for the very unlikely event Math.random() is 1 or due to floating point issues
+      };
+
       for (let i = 0; i < num; i++) {
-        const roll = Math.floor(Math.random() * 6) + 1;
+        const roll = rollDie();
         counts[roll]++;
       }
       const formattedResults: RollResult[] = Object.entries(counts).map(([key, value]) => ({
@@ -70,8 +94,8 @@ export default function DiceRoller() {
       }));
       setResults(formattedResults);
       setIsSimulating(false);
-      setSimulationKey(prevKey => prevKey + 1); // Force re-render of chart
-    }, 50); // Short delay for UI update
+      setSimulationKey(prevKey => prevKey + 1); 
+    }, 50); 
   };
   
   return (
@@ -102,8 +126,39 @@ export default function DiceRoller() {
             <p id="rolls-info" className="text-xs text-muted-foreground text-center font-mono">
               Enter how many times you want to roll the dice.
             </p>
-            {error && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
+            {error && !numRollsInput && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
+            {error && numRollsInput && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
           </div>
+
+          <div className="space-y-3">
+            <Label className="text-base">Boost a Number (Extra 2% Chance)</Label>
+            <RadioGroup
+              value={boostedNumber ? boostedNumber.toString() : "none"}
+              onValueChange={(value) => {
+                if (value === "none") {
+                  setBoostedNumber(null);
+                } else {
+                  setBoostedNumber(parseInt(value, 10));
+                }
+              }}
+              className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-1"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="none" id="boost-none" />
+                <Label htmlFor="boost-none" className="font-normal">None</Label>
+              </div>
+              {[1, 2, 3, 4, 5, 6].map((num) => (
+                <div key={num} className="flex items-center space-x-2">
+                  <RadioGroupItem value={num.toString()} id={`boost-${num}`} />
+                  <Label htmlFor={`boost-${num}`} className="font-normal">{num}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+             <p className="text-xs text-muted-foreground text-center font-mono">
+              Select a number to give it a slight advantage.
+            </p>
+          </div>
+
           <Button 
             type="submit" 
             className="w-full text-lg h-12"
@@ -116,13 +171,18 @@ export default function DiceRoller() {
       {isSimulating && (
          <CardFooter className="flex flex-col items-center justify-center pt-6">
             <p className="text-lg font-mono">Simulating rolls...</p>
-            {/* You could add a simple visual loading indicator here if desired */}
          </CardFooter>
       )}
       {results && !isSimulating && (
         <CardFooter className="flex flex-col items-center justify-center pt-6 w-full">
           <p className="text-lg font-mono text-center mb-4">
             Results for <span className="font-bold text-primary">{numRollsInput}</span> rolls:
+            {boostedNumber && (
+                <>
+                <br />
+                (Number <span className="font-bold text-accent">{boostedNumber}</span> was boosted)
+                </>
+            )}
           </p>
           <div className="w-full h-64 md:h-72">
             <ResponsiveContainer key={simulationKey} width="100%" height="100%">
@@ -132,10 +192,10 @@ export default function DiceRoller() {
                 <YAxis allowDecimals={false} stroke="hsl(var(--foreground))" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))', /* Use card for popover-like bg */
+                    backgroundColor: 'hsl(var(--card))', 
                     borderColor: 'hsl(var(--border))',
                     borderRadius: 'var(--radius)',
-                    boxShadow: 'var(--shadow-lg)' /* Optional: add shadow if desired */
+                    boxShadow: 'var(--shadow-lg)' 
                   }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
                   itemStyle={{ color: 'hsl(var(--primary))' }}
@@ -151,3 +211,4 @@ export default function DiceRoller() {
     </Card>
   );
 }
+
