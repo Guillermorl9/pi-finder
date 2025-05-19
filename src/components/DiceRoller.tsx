@@ -165,7 +165,7 @@ export default function DiceRoller() {
     <Card className="w-full max-w-md shadow-xl">
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-center text-primary">Dice Roller</CardTitle>
-        <CardDescription className="text-center font-mono pt-1">
+        <CardDescription className="text-center text-muted-foreground pt-2 text-sm">
           Simulate dice rolls and see the frequency of each number.
         </CardDescription>
       </CardHeader>
@@ -186,10 +186,10 @@ export default function DiceRoller() {
               aria-invalid={!!error}
               aria-describedby="error-message rolls-info"
             />
-            <p id="rolls-info" className="text-xs text-muted-foreground text-center font-mono">
+            <p id="rolls-info" className="text-xs text-muted-foreground text-center">
               Enter how many times you want to roll the dice.
             </p>
-            {error && <p id="error-message" className="text-sm text-destructive text-center font-mono pt-1">{error}</p>}
+            {error && <p id="error-message" className="text-sm text-destructive text-center pt-1">{error}</p>}
           </div>
 
           <div className="space-y-3">
@@ -218,7 +218,7 @@ export default function DiceRoller() {
                 </div>
               ))}
             </RadioGroup>
-             <p className="text-xs text-muted-foreground text-center font-mono pb-2">
+             <p className="text-xs text-muted-foreground text-center pb-2">
               Select a number to customize its probability of appearing.
             </p>
             {boostedNumber !== null && (
@@ -238,10 +238,10 @@ export default function DiceRoller() {
                   aria-invalid={!!probabilityError}
                   aria-describedby="probability-error-message probability-info-custom"
                 />
-                <p id="probability-info-custom" className="text-xs text-muted-foreground text-center font-mono">
+                <p id="probability-info-custom" className="text-xs text-muted-foreground text-center">
                   Enter desired chance (0-100) for selected number.
                 </p>
-                {probabilityError && <p id="probability-error-message" className="text-sm text-destructive text-center font-mono pt-1">{probabilityError}</p>}
+                {probabilityError && <p id="probability-error-message" className="text-sm text-destructive text-center pt-1">{probabilityError}</p>}
               </div>
             )}
           </div>
@@ -257,12 +257,12 @@ export default function DiceRoller() {
       </CardContent>
       {isSimulating && (
          <CardFooter className="flex flex-col items-center justify-center pt-6">
-            <p className="text-lg font-mono">Simulating rolls...</p>
+            <p className="text-lg">Simulating rolls...</p>
          </CardFooter>
       )}
       {results && !isSimulating && lastSimulationParams && (
         <CardFooter className="flex flex-col items-center justify-center pt-6 w-full">
-          <p className="text-lg font-mono text-center mb-4">
+          <p className="text-sm text-center mb-4">
             Results for <span className="font-bold text-primary">{lastSimulationParams.numRolls}</span> rolls:
             {lastSimulationParams.boostInfo && (
                 <>
@@ -297,3 +297,4 @@ export default function DiceRoller() {
     </Card>
   );
 }
+
