@@ -24,7 +24,6 @@ export default function PrimeFactorizer() {
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   
-  const [showAiTip, setShowAiTip] = useState<boolean>(false);
   const [aiTip, setAiTip] = useState<string>('');
   const [isFetchingAiTip, setIsFetchingAiTip] = useState<boolean>(false);
 
@@ -66,7 +65,7 @@ export default function PrimeFactorizer() {
     } while (p1 === p2 || numberToFactorize < 100 || numberToFactorize > 1000); 
 
     const solutionFactors = [p1, p2].sort((a, b) => a - b);
-    fetchNewAiTip(numberToFactorize); // Fetch new tip when challenge is generated
+    fetchNewAiTip(numberToFactorize); 
     return { numberToFactorize, solutionFactors };
   };
 
@@ -86,7 +85,6 @@ export default function PrimeFactorizer() {
     setFeedback(null);
     setIsGameOver(false);
     setIsChecking(false);
-    setShowAiTip(false); 
     // fetchNewAiTip is called inside generateChallenge
   };
 
@@ -149,11 +147,7 @@ export default function PrimeFactorizer() {
     });
     setIsGameOver(true);
     setUserInput(''); 
-    setShowAiTip(false);
-  };
-
-  const handleShowTip = () => {
-    setShowAiTip(true);
+    setAiTip(''); // Hide tip when solution is revealed
   };
 
   if (!challenge) {
@@ -183,6 +177,23 @@ export default function PrimeFactorizer() {
           <p className="text-sm text-muted-foreground font-mono">Factorize this number:</p>
           <p className="text-5xl font-bold text-accent tracking-wider my-2">{challenge.numberToFactorize}</p>
         </div>
+
+        {!isGameOver && isFetchingAiTip && (
+          <div className="flex items-center justify-center text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span>Fetching AI tip...</span>
+          </div>
+        )}
+
+        {!isGameOver && !isFetchingAiTip && aiTip && (
+          <Alert variant="default" className="w-full text-left border-accent/30">
+            <AlertTitle className="text-accent">AI Generated Tip</AlertTitle>
+            <AlertDescription className="font-mono text-sm">
+              {aiTip}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="factorsInput" className="block text-sm font-medium text-foreground mb-1">
@@ -212,52 +223,20 @@ export default function PrimeFactorizer() {
               {isChecking ? 'Checking...' : 'Check Factors'}
             </Button>
             {!isGameOver && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="text-sm h-12 px-3"
-                  onClick={handleRevealSolution}
-                  disabled={isChecking}
-                >
-                  Reveal Solution
-                </Button>
-                 {!showAiTip && aiTip && !isFetchingAiTip && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="text-sm h-12 px-3"
-                    onClick={handleShowTip}
-                    disabled={isChecking || isFetchingAiTip}
-                  >
-                    Show Tip
-                  </Button>
-                )}
-                {isFetchingAiTip && (
-                   <Button
-                    type="button"
-                    variant="outline"
-                    className="text-sm h-12 px-3"
-                    disabled={true}
-                  >
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Getting Tip...
-                  </Button>
-                )}
-              </>
+              <Button
+                type="button"
+                variant="outline"
+                className="text-sm h-12 px-3"
+                onClick={handleRevealSolution}
+                disabled={isChecking}
+              >
+                Reveal Solution
+              </Button>
             )}
           </div>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center pt-4 space-y-3">
-        {showAiTip && aiTip && !isFetchingAiTip && !isGameOver && (
-          <Alert variant="default" className="w-full text-left border-accent/30">
-            <AlertTitle className="text-accent">AI Generated Tip</AlertTitle>
-            <AlertDescription className="font-mono text-sm">
-              {aiTip}
-            </AlertDescription>
-          </Alert>
-        )}
         {feedback && (
           <Alert variant={feedback.type === 'destructive' ? 'destructive' : (feedback.type === 'success' ? 'default' : 'default')} className="w-full text-center">
              {feedback.type === 'success' && <AlertTitle>Congratulations!</AlertTitle>}
@@ -277,3 +256,4 @@ export default function PrimeFactorizer() {
     </Card>
   );
 }
+
