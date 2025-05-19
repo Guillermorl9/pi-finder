@@ -1,9 +1,6 @@
-import PiFinder from '@/components/PiFinder';
+import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-      <PiFinder />
-    </main>
-  );
+  redirect('/pi-finder');
+  // return null; // redirect will stop rendering. Next.js handles this.
 }
