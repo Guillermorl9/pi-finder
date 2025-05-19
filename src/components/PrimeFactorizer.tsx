@@ -55,7 +55,7 @@ export default function PrimeFactorizer() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUserInput(e.target.value);
-    if (feedback) setFeedback(null); // Clear feedback on new input
+    if (feedback && !isGameOver) setFeedback(null); // Clear feedback on new input, unless game over for solution reveal
   };
 
   const startNewChallenge = () => {
@@ -118,6 +118,16 @@ export default function PrimeFactorizer() {
     setIsChecking(false);
   };
 
+  const handleRevealSolution = () => {
+    if (!challenge) return;
+    setFeedback({ 
+      type: 'info', 
+      message: `The prime factors of ${challenge.numberToFactorize} are ${challenge.solutionFactors.join(' and ')}.` 
+    });
+    setIsGameOver(true);
+    setUserInput(''); // Clear input field
+  };
+
   if (!challenge) {
     return (
       <Card className="w-full max-w-md shadow-xl">
@@ -164,21 +174,35 @@ export default function PrimeFactorizer() {
               Example: For 15, enter "3, 5" or "5 3".
             </p>
           </div>
-          <Button
-            type="submit"
-            className="w-full text-lg h-12"
-            disabled={isGameOver || isChecking || !userInput.trim()}
-          >
-            {isChecking ? 'Checking...' : 'Check Factors'}
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              type="submit"
+              className="flex-1 text-lg h-12"
+              disabled={isGameOver || isChecking || !userInput.trim()}
+            >
+              {isChecking ? 'Checking...' : 'Check Factors'}
+            </Button>
+            {!isGameOver && (
+              <Button
+                type="button"
+                variant="outline"
+                className="text-sm h-12"
+                onClick={handleRevealSolution}
+                disabled={isChecking}
+              >
+                Reveal Solution
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center pt-4 space-y-3">
         {feedback && (
-          <Alert variant={feedback.type === 'success' ? 'default' : 'destructive'} className="w-full text-center">
+          <Alert variant={feedback.type === 'destructive' ? 'destructive' : 'default'} className="w-full text-center">
              {feedback.type === 'success' && <AlertTitle>Congratulations!</AlertTitle>}
              {feedback.type === 'error' && <AlertTitle>Oops!</AlertTitle>}
-            <AlertDescription className={`font-mono text-base ${feedback.type === 'success' ? 'text-primary' : ''}`}>
+             {feedback.type === 'info' && <AlertTitle>Solution</AlertTitle>}
+            <AlertDescription className={`font-mono text-base ${feedback.type === 'success' ? 'text-primary' : (feedback.type === 'info' ? 'text-accent' : '')}`}>
               {feedback.message}
             </AlertDescription>
           </Alert>
