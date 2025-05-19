@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getPrimeFactorizationTip, type PrimeFactorizationTipInput } from '@/ai/flows/prime-factorization-tip-flow';
+import { Loader2 } from 'lucide-react';
 
 const SMALL_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]; // Primes up to 37
 
@@ -21,8 +23,10 @@ export default function PrimeFactorizer() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const [showTip, setShowTip] = useState<boolean>(false);
-  const [tipMessage, setTipMessage] = useState<string>('');
+  
+  const [showAiTip, setShowAiTip] = useState<boolean>(false);
+  const [aiTip, setAiTip] = useState<string>('');
+  const [isFetchingAiTip, setIsFetchingAiTip] = useState<boolean>(false);
 
   const isPrime = (num: number): boolean => {
     if (num <= 1) return false;
@@ -32,6 +36,21 @@ export default function PrimeFactorizer() {
       if (num % i === 0 || num % (i + 2) === 0) return false;
     }
     return true;
+  };
+
+  const fetchNewAiTip = async (numberToFactorize?: number) => {
+    setIsFetchingAiTip(true);
+    setAiTip('');
+    try {
+      const tipInput: PrimeFactorizationTipInput = { numberToFactorize };
+      const result = await getPrimeFactorizationTip(tipInput);
+      setAiTip(result.tip);
+    } catch (error) {
+      console.error("Error fetching AI tip:", error);
+      setAiTip("Tip: Always double-check if your factors are truly prime!");
+    } finally {
+      setIsFetchingAiTip(false);
+    }
   };
 
   const generateChallenge = (): Challenge => {
@@ -47,11 +66,13 @@ export default function PrimeFactorizer() {
     } while (p1 === p2 || numberToFactorize < 100 || numberToFactorize > 1000); 
 
     const solutionFactors = [p1, p2].sort((a, b) => a - b);
+    fetchNewAiTip(numberToFactorize); // Fetch new tip when challenge is generated
     return { numberToFactorize, solutionFactors };
   };
 
   useEffect(() => {
     setChallenge(generateChallenge());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -65,8 +86,8 @@ export default function PrimeFactorizer() {
     setFeedback(null);
     setIsGameOver(false);
     setIsChecking(false);
-    setShowTip(false);
-    setTipMessage('');
+    setShowAiTip(false); 
+    // fetchNewAiTip is called inside generateChallenge
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -128,12 +149,11 @@ export default function PrimeFactorizer() {
     });
     setIsGameOver(true);
     setUserInput(''); 
-    setShowTip(false); // Hide tip if it was shown
+    setShowAiTip(false);
   };
 
   const handleShowTip = () => {
-    setTipMessage("Hint: Try dividing by small prime numbers (e.g., 2, 3, 5, 7). If the number is even, 2 is a factor. If the sum of its digits is divisible by 3, then 3 is a factor. If it ends in 0 or 5, then 5 is a factor. One of the prime factors will generally be less than or equal to the square root of the number.");
-    setShowTip(true);
+    setShowAiTip(true);
   };
 
   if (!challenge) {
@@ -144,7 +164,7 @@ export default function PrimeFactorizer() {
           <CardDescription className="text-center font-mono pt-1">Loading challenge...</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -165,7 +185,7 @@ export default function PrimeFactorizer() {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="factorsInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <Label htmlFor="factorsInput" className="block text-sm font-medium text-foreground mb-1">
               Enter prime factors (comma or space separated)
             </Label>
             <Input
@@ -188,6 +208,7 @@ export default function PrimeFactorizer() {
               className="flex-1 text-lg h-12"
               disabled={isGameOver || isChecking || !userInput.trim()}
             >
+              {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isChecking ? 'Checking...' : 'Check Factors'}
             </Button>
             {!isGameOver && (
@@ -201,15 +222,26 @@ export default function PrimeFactorizer() {
                 >
                   Reveal Solution
                 </Button>
-                 {!showTip && (
+                 {!showAiTip && aiTip && !isFetchingAiTip && (
                   <Button
                     type="button"
                     variant="outline"
                     className="text-sm h-12 px-3"
                     onClick={handleShowTip}
-                    disabled={isChecking}
+                    disabled={isChecking || isFetchingAiTip}
                   >
                     Show Tip
+                  </Button>
+                )}
+                {isFetchingAiTip && (
+                   <Button
+                    type="button"
+                    variant="outline"
+                    className="text-sm h-12 px-3"
+                    disabled={true}
+                  >
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Getting Tip...
                   </Button>
                 )}
               </>
@@ -218,16 +250,16 @@ export default function PrimeFactorizer() {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center pt-4 space-y-3">
-        {showTip && !isGameOver && (
+        {showAiTip && aiTip && !isFetchingAiTip && !isGameOver && (
           <Alert variant="default" className="w-full text-left border-accent/30">
-            <AlertTitle className="text-accent">Strategy Tip</AlertTitle>
+            <AlertTitle className="text-accent">AI Generated Tip</AlertTitle>
             <AlertDescription className="font-mono text-sm">
-              {tipMessage}
+              {aiTip}
             </AlertDescription>
           </Alert>
         )}
         {feedback && (
-          <Alert variant={feedback.type === 'destructive' ? 'destructive' : 'default'} className="w-full text-center">
+          <Alert variant={feedback.type === 'destructive' ? 'destructive' : (feedback.type === 'success' ? 'default' : 'default')} className="w-full text-center">
              {feedback.type === 'success' && <AlertTitle>Congratulations!</AlertTitle>}
              {feedback.type === 'error' && <AlertTitle>Oops!</AlertTitle>}
              {feedback.type === 'info' && <AlertTitle>Solution</AlertTitle>}
@@ -245,4 +277,3 @@ export default function PrimeFactorizer() {
     </Card>
   );
 }
-
